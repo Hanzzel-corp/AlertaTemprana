@@ -1,0 +1,19 @@
+# Archivos de entorno
+.env
+*.pyc
+__pycache__/
+
+# Archivos personales del bot
+config.py
+chat_id.json
+ubicacion_usuario.json
+clima_log.csv
+
+# Archivos del entorno virtual
+env/
+venv/
+
+# Archivos temporales o del sistema
+.DS_Store
+Thumbs.db
+*.log

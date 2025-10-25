@@ -1,0 +1,5 @@
+prophet
+pandas
+matplotlib
+requests
+python 3.12 o superior

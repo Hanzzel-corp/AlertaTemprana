@@ -1,19 +1,36 @@
-# Archivos de entorno
-.env
-*.pyc
-__pycache__/
+# --- Entornos virtuales ---
+env/
+.venv/
+venv/
 
-# Archivos personales del bot
+# --- Archivos de configuración local (no subir tokens o ubicaciones privadas) ---
 config.py
 chat_id.json
 ubicacion_usuario.json
-clima_log.csv
 
-# Archivos del entorno virtual
-env/
-venv/
+# --- Archivos de cache de Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
 
-# Archivos temporales o del sistema
+# --- Logs y CSV temporales ---
+*.log
+*.csv
+
+# --- Archivos del sistema y del IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Archivos de sistema operativo ---
 .DS_Store
 Thumbs.db
-*.log
+desktop.ini
+
+# --- Archivos de prueba o temporales ---
+offline.png
+*.bak
+*.tmp

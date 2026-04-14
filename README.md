@@ -1,4 +1,3 @@
-=======
 # 🌦️ AlertaTemprana v4.0
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
@@ -330,4 +329,3 @@ furnished to do so, subject to the following conditions:
 <p align="center">
   🌦️ <strong>AlertaTemprana</strong> — Inteligencia Meteorológica para Todos
 </p>
->>>>>>> 89e4af6 (feat: initial Linux setup for AlertaTemprana)

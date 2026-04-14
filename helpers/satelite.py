@@ -1,13 +1,65 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+helpers/satelite.py
+Módulo de obtención y procesamiento de imágenes satelitales.
+
+Descarga imágenes satelitales en tiempo real desde NASA GOES,
+las procesa con overlays informativos (datos climáticos, ubicación),
+y gestiona fallbacks offline cuando no hay conectividad.
+
+Funciones:
+    obtener_imagen_satelital: Descarga y procesa imagen satelital.
+
+Dependencias:
+    - requests: Descarga de imágenes HTTP.
+    - Pillow (PIL): Procesamiento de imágenes.
+
+Autor: Hanzzel Corp
+Licencia: MIT
+Versión: 1.0.0
+"""
+
 import requests
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 from config import LAT, LON
 
-def obtener_imagen_satelital(datos=None):
+
+def obtener_imagen_satelital(datos: dict | None = None) -> str:
     """
-    Descarga imagen satelital actual (NASA GOES).
-    Si falla, usa imagen local de respaldo.
-    Dibuja overlay con datos del clima.
+    Descarga, procesa y guarda una imagen satelital con datos de clima.
+
+    Intenta obtener la imagen más reciente de NASA GOES (Sudamérica).
+    Si la descarga falla, genera una imagen de respaldo offline.
+    Superpone información meteorológica sobre la imagen descargada.
+
+    Args:
+        datos (dict | None): Diccionario con datos climáticos para el overlay:
+            - temp (float): Temperatura en °C
+            - humedad (float): Humedad en %
+            - presion (float): Presión en hPa
+            Si es None, muestra mensaje de datos no disponibles.
+
+    Returns:
+        str: Nombre del archivo de imagen generado:
+            - "satelite_YYYYMMDD_HHMMSS.png" si exitoso
+            - "offline.png" si falla la descarga
+
+    Proceso:
+        1. Descarga imagen desde NASA GOES (timeout 12s)
+        2. Valida que sea contenido de imagen
+        3. Dibuja punto rojo indicando ubicación central
+        4. Superpone barra con datos meteorológicos
+        5. Guarda con timestamp único
+
+    Fuentes:
+        - NASA GOES: https://weather.msfc.nasa.gov/GOES/
+
+    Example:
+        >>> datos = {"temp": 22.5, "humedad": 65, "presion": 1013}
+        >>> imagen = obtener_imagen_satelital(datos)
+        >>> print(f"Imagen generada: {imagen}")
     """
     nombre = f"satelite_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
 

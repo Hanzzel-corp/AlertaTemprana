@@ -1,15 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🌦️ AlertaTemprana v4.0 — Bot Inteligente + Predicción + Visualización
-Autor: Hanzzel Corp ∑Δ9
-Licencia: MIT
+bot_alerta_debug.py
+Script principal del Bot de Alerta Temprana Meteorológica.
 
-Ahora incluye:
-- 🔮 Predicción meteorológica 6h (Prophet)
-- ⚠️ Alertas automáticas (temperatura, humedad, lluvia)
-- 📊 Gráfico de temperatura
-- 💬 Teclado interactivo en Telegram
+Bot interactivo de Telegram que proporciona información meteorológica
+en tiempo real, incluyendo:
+    - Clima actual con datos triangulados (Open-Meteo + SMN)
+    - Predicciones de temperatura usando Prophet (6h horizonte)
+    - Alertas automáticas por condiciones críticas
+    - Imágenes satelitales de NASA GOES
+    - Gráficos históricos de temperatura
+    - Geolocalización configurable por ciudad
+
+Arquitectura:
+    - Hilo principal: Ciclo de actualización climática cada 30 minutos
+    - Hilo secundario: Escucha de comandos Telegram cada 2 segundos
+    - Persistencia: CSV para historial, JSON para configuración
+
+Comandos soportados:
+    /start, /help → Muestra menú interactivo
+    /tiempo, "🌦️ Clima" → Clima actual
+    /radar, "🛰️ Radar" → Imagen satelital
+    /grafico, "📊 Gráfico" → Gráfico de temperatura
+    /ubicacion <ciudad> → Cambiar ubicación
+    /ubicacion_actual → Mostrar ubicación actual
+
+Variables de entorno (desde config.py):
+    TELEGRAM_TOKEN: Token del bot de Telegram (requerido)
+    CHAT_ID: ID del chat (se detecta automáticamente)
+    LAT, LON: Coordenadas geográficas
+
+Autor: Hanzzel Corp
+Licencia: MIT
+Versión: 4.0.0
 """
 
 import time
@@ -28,24 +52,39 @@ from helpers.graficos import generar_grafico_clima
 from config import TELEGRAM_TOKEN
 
 
-# Intervalos
-INTERVALO_CLIMA = 1800  # 30 min
-INTERVALO_COMANDOS = 2  # 2 seg
+# ---------- CONFIGURACIÓN DE INTERVALOS ----------
+INTERVALO_CLIMA = 1800      # Segundos entre actualizaciones (30 minutos)
+INTERVALO_COMANDOS = 2      # Segundos entre polling de comandos (2 segundos)
 
-# Variables globales
-LAST_UPDATE_ID = None
-ULTIMA_IMAGEN = None
-ULTIMO_RESUMEN = None
-CHAT_ID = None
-UBICACION = cargar_ubicacion() or {
+# ---------- VARIABLES GLOBALS ----------
+LAST_UPDATE_ID: int | None = None   # ID de última actualización de Telegram
+ULTIMA_IMAGEN: str | None = None     # Ruta de última imagen satelital generada
+ULTIMO_RESUMEN: str | None = None    # Último resumen de clima enviado
+CHAT_ID: int | None = None           # ID del chat de Telegram
+
+# Carga ubicación guardada o usa Buenos Aires como default
+UBICACION: dict = cargar_ubicacion() or {
     "ciudad": "Buenos Aires",
     "lat": -34.6037,
     "lon": -58.3816,
 }
 
 
-# --- Funciones de envío ---
-def enviar_telegram(msg):
+# ==========================================
+# FUNCIONES DE ENVÍO A TELEGRAM
+# ==========================================
+
+def enviar_telegram(msg: str) -> None:
+    """
+    Envía un mensaje de texto al chat de Telegram configurado.
+
+    Args:
+        msg (str): Mensaje a enviar (soporta emojis).
+
+    Nota:
+        Requiere que CHAT_ID esté configurado. Los errores se capturan
+        y loggean en consola sin interrumpir el flujo.
+    """
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         requests.post(url, json={"chat_id": CHAT_ID, "text": msg})
@@ -53,7 +92,18 @@ def enviar_telegram(msg):
         print("⚠️ Error al enviar mensaje:", e)
 
 
-def enviar_imagen_telegram(imagen, texto, hora):
+def enviar_imagen_telegram(imagen: str, texto: str, hora: str) -> None:
+    """
+    Envía una imagen al chat de Telegram con caption informativo.
+
+    Args:
+        imagen (str): Ruta al archivo de imagen local.
+        texto (str): Descripción del contenido de la imagen.
+        hora (str): Timestamp para incluir en el caption.
+
+    Nota:
+        El caption se formatea automáticamente como: "🕓 {hora}\n{texto}"
+    """
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendPhoto"
         with open(imagen, "rb") as f:
@@ -68,8 +118,16 @@ def enviar_imagen_telegram(imagen, texto, hora):
         print("⚠️ No se pudo enviar imagen:", e)
 
 
-def mostrar_menu_principal(chat_id):
-    """Muestra el teclado interactivo"""
+def mostrar_menu_principal(chat_id: int) -> None:
+    """
+    Muestra el teclado interactivo personalizado en Telegram.
+
+    Presenta un menú de botones persistente para acceso rápido
+    a las funciones principales del bot.
+
+    Args:
+        chat_id (int): Identificador del chat de Telegram.
+    """
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     keyboard = {
         "keyboard": [
@@ -83,8 +141,18 @@ def mostrar_menu_principal(chat_id):
     requests.post(url, json=data)
 
 
-# --- Obtener CHAT_ID automático ---
-def detectar_chat_id():
+# ==========================================
+# GESTIÓN DE CHAT ID
+# ==========================================
+
+def detectar_chat_id() -> None:
+    """
+    Detecta automáticamente el CHAT_ID desde mensajes entrantes.
+
+    Consulta las actualizaciones pendientes de Telegram y extrae
+    el chat_id del primer mensaje disponible. Guarda el valor
+    en 'chat_id.json' para persistencia entre reinicios.
+    """
     global CHAT_ID
     try:
         r = requests.get(f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/getUpdates", timeout=5)
@@ -100,7 +168,14 @@ def detectar_chat_id():
         pass
 
 
-def cargar_chat_id():
+def cargar_chat_id() -> None:
+    """
+    Carga el CHAT_ID desde archivo JSON o intenta detectarlo.
+
+    Prioridad:
+        1. Archivo 'chat_id.json' si existe
+        2. Detección automática desde API de Telegram
+    """
     global CHAT_ID
     if os.path.exists("chat_id.json"):
         with open("chat_id.json") as f:
@@ -110,8 +185,25 @@ def cargar_chat_id():
         detectar_chat_id()
 
 
-# --- Lector de comandos ---
-def lector_comandos():
+# ==========================================
+# GESTIÓN DE COMANDOS
+# ==========================================
+
+def lector_comandos() -> None:
+    """
+    Hilo dedicado a escuchar y procesar comandos de Telegram.
+
+    Ejecuta polling continuo de la API getUpdates, procesando:
+        - Comandos de ubicación (/ubicacion, /ubicacion_actual)
+        - Consultas de clima (/tiempo, "🌦️ Clima")
+        - Imágenes satelitales (/radar, "🛰️ Radar")
+        - Gráficos de temperatura (/grafico, "📊 Gráfico")
+        - Ayuda y menú (/start, /help)
+
+    Nota:
+        Esta función se ejecuta en un hilo daemon para no bloquear
+        el ciclo principal de actualización climática.
+    """
     global LAST_UPDATE_ID, UBICACION
     print("🎧 Lector de comandos iniciado...")
     while True:
@@ -194,8 +286,25 @@ def lector_comandos():
             time.sleep(3)
 
 
-# --- Ciclo principal del clima ---
-def ciclo_clima():
+# ==========================================
+# CICLO PRINCIPAL DE CLIMA
+# ==========================================
+
+def ciclo_clima() -> None:
+    """
+    Bucle principal de actualización meteorológica automática.
+
+    Ejecuta cada INTERVALO_CLIMA segundos (default: 30 min):
+        1. Obtiene datos triangulados de fuentes meteorológicas
+        2. Registra datos en CSV para historial
+        3. Evalúa y envía alertas si hay condiciones críticas
+        4. Genera predicción de temperatura (Prophet)
+        5. Descarga y envía imagen satelital
+        6. Envía resumen de clima al chat
+
+    Nota:
+        Este es el hilo principal del programa. Nunca retorna.
+    """
     global ULTIMA_IMAGEN, ULTIMO_RESUMEN
     while True:
         try:
@@ -229,11 +338,26 @@ def ciclo_clima():
         time.sleep(INTERVALO_CLIMA)
 
 
-# --- Inicio ---
+# ==========================================
+# PUNTO DE ENTRADA
+# ==========================================
+
 if __name__ == "__main__":
     print("🚀 Iniciando AlertaTemprana v4.0 — Inteligente + Visual")
+    print("=" * 50)
+    print("📡 Bot Meteorológico con Telegram")
+    print("🌍 Fuentes: Open-Meteo + SMN Argentina")
+    print("🔮 Predicción: Prophet (Facebook)")
+    print("🛰️ Imágenes: NASA GOES")
+    print("=" * 50)
+
     cargar_chat_id()
+
+    # Inicia hilo de comandos en background
     threading.Thread(target=lector_comandos, daemon=True).start()
+    print("🎧 Lector de comandos iniciado en hilo paralelo")
+
+    # Inicia ciclo principal de clima (bloqueante)
     ciclo_clima()
 
 

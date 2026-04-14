@@ -1,8 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+helpers/fuentes.py
+Módulo de obtención de datos meteorológicos desde fuentes externas.
+
+Integra múltiples fuentes de datos climáticos:
+    - Open-Meteo: API global de pronóstico meteorológico gratuito
+    - SMN Argentina: Servicio Meteorológico Nacional (datos de estaciones locales)
+
+Funciones:
+    open_meteo: Obtiene datos desde la API de Open-Meteo.
+    smn_weather: Obtiene datos desde estaciones del SMN Argentina.
+    obtener_datos_triangulados_debug: Combina ambas fuentes con ponderación.
+
+Autor: Hanzzel Corp
+Licencia: MIT
+Versión: 1.1.0
+"""
+
 import requests
 from config import LAT, LON
 
-# ---------- OPEN METEO ----------
-def open_meteo():
+
+# Peso de ponderación para triangulación: [Open-Meteo, SMN]
+PESO_FUENTES = [0.6, 0.4]
+
+def open_meteo() -> dict:
+    """
+    Obtiene datos meteorológicos actuales desde la API de Open-Meteo.
+
+    La API de Open-Meteo proporciona datos de pronóstico gratuito
+    sin necesidad de API key. Consulta temperatura, humedad, presión
+    y precipitación para las coordenadas configuradas.
+
+    Returns:
+        dict: Datos meteorológicos con claves:
+            - temp (float): Temperatura en °C
+            - humedad (float): Humedad relativa en %
+            - presion (float): Presión atmosférica en hPa
+            - lluvia (float): Precipitación en mm
+        En caso de error, retorna valores en cero.
+
+    Raises:
+        No lanza excepciones. Los errores se capturan y loggean.
+    """
     try:
         url = (
             f"https://api.open-meteo.com/v1/forecast?"
@@ -21,10 +62,27 @@ def open_meteo():
         print("⚠️ Open-Meteo falló:", e)
         return {"temp": 0, "humedad": 0, "presion": 0, "lluvia": 0}
 
+
 # ---------- SMN ARGENTINA ----------
-def smn_weather():
+def smn_weather() -> dict:
     """
-    Usa el servicio público del SMN. Devuelve 0 si no hay datos válidos.
+    Obtiene datos meteorológicos desde el Servicio Meteorológico Nacional (SMN) de Argentina.
+
+    Consulta el endpoint público del SMN y selecciona la estación meteorológica
+    más cercana a las coordenadas configuradas (LAT, LON). Filtra estaciones
+    con datos válidos (excluye valores nulos o vacíos).
+
+    Returns:
+        dict: Datos meteorológicos con claves:
+            - temp (float): Temperatura en °C
+            - humedad (float): Humedad relativa en %
+            - presion (float): Presión atmosférica en hPa
+            - lluvia (float): Precipitación en mm
+        En caso de error o sin datos válidos, retorna valores en cero.
+
+    Nota:
+        El SMN solo cubre territorio argentino. Para ubicaciones fuera
+        de Argentina, esta fuente retornará ceros.
     """
     try:
         r = requests.get("https://ws.smn.gob.ar/map_items/weather", timeout=10)
@@ -68,8 +126,29 @@ def smn_weather():
         print("⚠️ SMN falló:", e)
         return {"temp": 0, "humedad": 0, "presion": 0, "lluvia": 0}
 
-# ---------- TRIANGULACIÓN DINÁMICA ----------
-def obtener_datos_triangulados_debug():
+def obtener_datos_triangulados_debug() -> tuple:
+    """
+    Combina datos de múltiples fuentes meteorológicas con ponderación.
+
+    Obtiene datos simultáneamente de Open-Meteo y SMN Argentina, luego
+    los combina usando ponderaciones configurables. Si SMN no tiene datos
+    válidos (por ejemplo, ubicación fuera de Argentina), usa solo Open-Meteo.
+
+    La ponderación actual es:
+        - Open-Meteo: 60% (mayor cobertura global)
+        - SMN: 40% (mayor precisión local en Argentina)
+
+    Returns:
+        tuple: (datos_combinados, fuentes_individuales)
+            - datos_combinados (dict): Datos ponderados con las mismas claves
+            - fuentes_individuales (dict): Datos originales de cada fuente
+              bajo las claves "Open-Meteo" y "SMN"
+
+    Example:
+        >>> datos, fuentes = obtener_datos_triangulados_debug()
+        >>> print(f"Temp: {datos['temp']:.1f}°C")
+        >>> print(f"Fuentes: {fuentes.keys()}")
+    """
     f1 = open_meteo()
     f2 = smn_weather()
 
@@ -78,7 +157,7 @@ def obtener_datos_triangulados_debug():
         print("ℹ️ Solo Open-Meteo tiene datos válidos.")
         datos = f1
     else:
-        peso = [0.6, 0.4]
+        peso = PESO_FUENTES
         datos = {
             "temp": f1["temp"] * peso[0] + f2["temp"] * peso[1],
             "humedad": f1["humedad"] * peso[0] + f2["humedad"] * peso[1],

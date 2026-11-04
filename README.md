@@ -329,3 +329,11 @@ furnished to do so, subject to the following conditions:
 <p align="center">
   🌦️ <strong>AlertaTemprana</strong> — Inteligencia Meteorológica para Todos
 </p>
+
+---
+
+## Dirección de investigación y autoría
+
+**José Zamora — Investigador principal independiente (Independent Principal Investigator), Hanzzel Corp.**
+
+Este repositorio es un proyecto individual del ecosistema Hanzzel Corp. Su pertenencia al ecosistema no implica integración técnica con NCT ni validación de resultados más allá de la evidencia documentada aquí.

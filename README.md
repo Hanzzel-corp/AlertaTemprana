@@ -173,9 +173,7 @@ TELEGRAM_TOKEN = "123456789:TU_TOKEN_AQUI"
 LAT, LON = -34.6037, -58.3816
 ```
 
-> **Importante:** Nunca subas `config.py` a GitHub. Aunque `.gitignore` lo contemple, el archivo `config.py` aparece actualmente en la raíz versionada del repositorio; una regla de ignore no retira un archivo que ya fue agregado a Git.
->
-> **Revisión pendiente antes de redistribuir o ampliar exposición:** la raíz también contiene `chat_id.json`, `ubicacion_usuario.json` y `clima_log.csv`, que este README describe como archivos generados en runtime. No se modificaron ni eliminaron en esta pasada. Revisar su contenido y decidir expresamente qué debe permanecer versionado.
+**Seguridad:** `config.py`, `.env`, `chat_id.json`, `ubicacion_usuario.json`, `clima_log.csv` y `grafico_temp.png` son archivos locales o generados durante la ejecución y están excluidos mediante `.gitignore`. No publiques tokens, identificadores de chat, coordenadas personales ni registros de uso. Si un token fue publicado alguna vez, considéralo comprometido y revócalo; borrarlo del archivo actual no elimina su exposición en el historial Git.
 
 ### 3. Obtener Chat ID automáticamente
 
@@ -203,7 +201,7 @@ Verás la siguiente salida:
 🔮 Predicción: Prophet (Facebook)
 🛰️ Imágenes: NASA GOES
 ==================================================
-📡 CHAT_ID cargado: 123456789
+📡 CHAT_ID cargado: [valor local oculto]
 🎧 Lector de comandos iniciado en hilo paralelo
 ```
 

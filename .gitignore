@@ -1,8 +1,19 @@
+# Entornos y cachés de Python
 .venv/
 env/
 venv/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
 .vscode/
+
+# Configuración local y secretos
+config.py
+.env
+.env.*
+!.env.example
+
+# Datos personales y archivos generados en runtime
+chat_id.json
+ubicacion_usuario.json
+clima_log.csv
+grafico_temp.png

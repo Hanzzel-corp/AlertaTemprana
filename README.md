@@ -47,7 +47,7 @@ Desarrollado por **Hanzzel Corp** | Licencia: [MIT](LICENSE)
 | 🛰️ **Imágenes Satelitales** | Descarga desde NASA GOES con overlay de datos meteorológicos |
 | 🧠 **Predicción ML** | Forecasting de temperatura a 6 horas usando Prophet |
 | ⚠️ **Alertas Automáticas** | Detección de condiciones críticas (olas de calor, heladas, lluvias intensas) |
-| � **Visualización** | Gráficos históricos de temperatura con matplotlib |
+| **Visualización** | Gráficos históricos de temperatura con matplotlib |
 | 💾 **Persistencia** | Logging CSV completo para análisis histórico |
 | 🔗 **Multi-fuente** | Triangulación Open-Meteo + SMN Argentina para mayor precisión |
 
@@ -143,7 +143,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> **Nota:** Prophet puede requerer compilación. En caso de errores, instala primero: `pip install pystan==2.19.1.1` y luego `pip install prophet`.
+> **Nota:** Prophet puede requerir compilación. En caso de errores, instala primero: `pip install pystan==2.19.1.1` y luego `pip install prophet`.
 
 ---
 
@@ -173,7 +173,9 @@ TELEGRAM_TOKEN = "123456789:TU_TOKEN_AQUI"
 LAT, LON = -34.6037, -58.3816
 ```
 
-> **Importante:** Nunca subas `config.py` a GitHub (ya está en `.gitignore`).
+> **Importante:** Nunca subas `config.py` a GitHub. Aunque `.gitignore` lo contemple, el archivo `config.py` aparece actualmente en la raíz versionada del repositorio; una regla de ignore no retira un archivo que ya fue agregado a Git.
+>
+> **Revisión pendiente antes de redistribuir o ampliar exposición:** la raíz también contiene `chat_id.json`, `ubicacion_usuario.json` y `clima_log.csv`, que este README describe como archivos generados en runtime. No se modificaron ni eliminaron en esta pasada. Revisar su contenido y decidir expresamente qué debe permanecer versionado.
 
 ### 3. Obtener Chat ID automáticamente
 
@@ -224,7 +226,7 @@ Verás la siguiente salida:
 
 ```
 💬 Usuario: /tiempo
-� Bot: �️ Clima actual en Buenos Aires:
+Bot: Clima actual en Buenos Aires:
        🌡️ Temp: 22.5 °C
        💧 Humedad: 65%
        🌀 Presión: 1013 hPa
@@ -279,7 +281,7 @@ fecha,hora,temperatura,humedad,presion,lluvia,fuente
 
 ---
 
-## �️ Roadmap
+## Roadmap
 
 - [x] Geolocalización por nombre de ciudad
 - [x] Predicción ML con Prophet
@@ -294,7 +296,7 @@ fecha,hora,temperatura,humedad,presion,lluvia,fuente
 
 ---
 
-## � Créditos
+## Créditos
 
 **Desarrollado por:** [Hanzzel Corp](https://github.com/Hanzzel-corp)
 
